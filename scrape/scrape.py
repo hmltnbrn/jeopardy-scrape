@@ -1,76 +1,51 @@
 import sys
-import json
-import datetime
-import psycopg2
-import psycopg2.extras
-# import game_links
+import pg
+import build
+import game_links
 import game_data
 
-def insert(cur, table, data):
-    query = "INSERT INTO " + table + " VALUES %s"
-    psycopg2.extras.execute_values (
-        cur, query, data
-    )
+def by_season(conn, cur, links):
+    for season in links:
+        length = len(links[season])
+        for i in xrange(length):
+            jeopardy_data = game_data.get(links[season][i], season)
+            amtDone = float(i+1)/float(length)
+            if(len(jeopardy_data) > 0):
+                build.games(cur, jeopardy_data)
+                build.contestants(cur, jeopardy_data["contestants"], jeopardy_data["id"])
+                build.rounds(cur, jeopardy_data["rounds"], jeopardy_data["id"])
+                pg.commit(conn, cur)
+                sys.stdout.write("\rSeason " + str(season) + " Progress: [{0:50s}] {1:.1f}%".format('#' * int(amtDone * 50), amtDone * 100) + " Episode " + jeopardy_data["show_number"] + " scrape and insert done...")
+        sys.stdout.write("\n")
 
-def insert_once(cur, table, data):
-    query = "INSERT INTO " + table + " VALUES %s ON CONFLICT (Id) DO NOTHING"
-    psycopg2.extras.execute_values (
-        cur, query, data
-    )
-
-def games(cur, data):
-    insert(cur, "Games", [(data["id"], data["air_date"], data["season"], data["show_number"], data["before_double"])])
-
-def contestants(cur, data, game_id):
-    contestants = []
-    game_contestants = []
-    for i in data:
-        contestants.append((i["id"], i["first_name"], i["last_name"], i["profession"], i["home_town"]))
-        game_contestants.append((game_id, i["id"], i["game_status"]["winner"], i["game_status"]["jeopardy_total"], i["game_status"]["double_jeopardy_total"], i["game_status"]["final_jeopardy_total"], i["game_status"]["final_jeopardy_wager"]))
-    insert_once(cur, "Contestants", contestants)
-    insert(cur, "GameContestants", game_contestants)
-
-def clues(cur, data, category_id):
-    clues = []
-    rights = []
-    wrongs = []
-    for i in data:
-        clues.append((i["id"], category_id, i["clue"], i["value"], i["answer"], i["daily_double"], i["daily_double_wager"], i["triple_stumper"]))
-        for j in xrange(len(i["rights"])):
-            rights.append((i["id"], i["rights"][j]))
-        for k in xrange(len(i["wrongs"])):
-            wrongs.append((i["id"], i["wrongs"][k]))
-    insert(cur, "Clues", clues)
-    insert(cur, "ClueRights", rights)
-    insert(cur, "ClueWrongs", wrongs)
-
-def categories(cur, data, game_id, round_id):
-    categories = []
-    for i in data:
-        categories.append((i["id"], game_id, round_id, i["name"]))
-    insert(cur, "Categories", categories)
-    for i in data:
-        clues(cur, i["clues"], i["id"])
-
-def rounds(cur, data, game_id):
-    rounds = []
-    for i in data:
-        categories(cur, i["categories"], game_id, i["id"])
+def by_episode(conn, cur, link, season):
+    jeopardy_data = game_data.get(link, season)
+    build.games(cur, jeopardy_data)
+    build.contestants(cur, jeopardy_data["contestants"], jeopardy_data["id"])
+    build.rounds(cur, jeopardy_data["rounds"], jeopardy_data["id"])
+    pg.commit(conn, cur)
+    sys.stdout.write("\rSeason " + str(season) + " Episode " + jeopardy_data["show_number"] + " scrape and insert done...")
+    sys.stdout.write("\n")
 
 if __name__ == "__main__":
-    with open('../database/credentials.json') as cred_file:
-        cred = json.load(cred_file)
+    conn, cur = pg.connect()
 
-    conn = psycopg2.connect(host=cred["host"],database=cred["database"], user=cred["user"], password=cred["password"])
-    cur = conn.cursor()
+    if sys.argv[1] == '--ep':
+        by_episode(conn, cur, sys.argv[2], sys.argv[3])
+    else:
+        if len(sys.argv) == 3:
+            # first argument is season to start on
+            # second argument is season to end on
+            links = game_links.get(int(sys.argv[1]), int(sys.argv[2]))
+        elif len(sys.argv) == 2:
+            # first argument is season to start on
+            # no second argument will default to last possible season
+            links = game_links.get(int(sys.argv[1]))
+        else:
+            # no arguments will default to first season and last possible season
+            links = game_links.get()
+        by_season(conn, cur, links)
 
-    jeopardy_data = game_data.get(sys.argv[1], sys.argv[2])
+    pg.disconnect(conn, cur)
 
-    games(cur, jeopardy_data)
-    contestants(cur, jeopardy_data["contestants"], jeopardy_data["id"])
-    rounds(cur, jeopardy_data["rounds"], jeopardy_data["id"])
-
-    conn.commit()
-
-    cur.close()
-    conn.close()
+    print "Data successfully uploaded"

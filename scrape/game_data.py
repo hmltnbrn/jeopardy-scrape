@@ -95,7 +95,7 @@ class Round(object):
         for i in xrange(len(cats)):
             cat_name = cats[i].find(class_='category_name')
             if cat_name:
-                categories.append(Category(cat_name.find(text=True), clues[i:len(clues):6], self.id, self.before_double, self.html if self.name == 'Final Jeopardy!' else None))
+                categories.append(Category(cat_name.find(text=True), clues[i:len(clues):6], self.id, self.before_double, self.html if self.name == 'Final Jeopardy!' else None, i))
         return categories
 
     def get_data(self):
@@ -106,25 +106,25 @@ class Round(object):
 
 class Category(object):
 
-    def __init__(self, name, html, round, before_double, answer_div = None):
+    def __init__(self, name, html, round, before_double, answer_div, index):
         self.id = uuid.uuid4()
         self.name = name
         self.html = html
         self.round = round
         self.before_double = before_double
         self.answer_div = answer_div
-        self.clues = self.set_clues()
+        self.clues = self.set_clues(index)
 
-    def set_clues(self):
+    def set_clues(self, index):
         clues = []
         for i in xrange(len(self.html)):
             value = self.html[i].find(class_="clue_value") if self.html[i].find(class_="clue_value_daily_double") is None else self.html[i].find(class_="clue_value_daily_double")
             question = self.html[i].find(class_="clue_text")
-            answer = self.answer_div.find("div") if self.answer_div is not None else self.html[i].find("div")
+            answer = self.answer_div.findAll("div")[index] if self.answer_div is not None else self.html[i].find("div")
             if(value and question and answer):
-                clues.append(Clue(value.find(text=True), question.get_text(), re.sub('<[^<]+?>', '', re.search('<em class="correct_response">(.*)</em>', answer["onmouseover"]).group(1)), answer["onmouseover"], i, self.round, self.before_double))
+                clues.append(Clue(value.find(text=True), question.get_text(), BeautifulSoup(answer["onmouseover"], "html.parser").find(class_="correct_response").get_text(), answer["onmouseover"], i, self.round, self.before_double))
             elif(question and answer):
-                clues.append(Clue("", question.get_text(), re.search(r'<em class=\\"correct_response\\">(.*)</em>', answer["onmouseover"]).group(1), answer["onmouseover"], i, self.round, self.before_double))
+                clues.append(Clue("", question.get_text(), BeautifulSoup(answer["onmouseover"], "html.parser").find(class_=re.compile("correct")).get_text(), answer["onmouseover"], i, self.round, self.before_double))
         return clues
 
     def get_data(self):
