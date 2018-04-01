@@ -8,7 +8,7 @@ DROP TABLE IF EXISTS
 , Clues
 , Categories
 , Rounds
-, Games
+, Games;
 
 /* END DROPS */
 
@@ -38,10 +38,10 @@ CREATE TABLE Clues (
     Id TEXT PRIMARY KEY NOT NULL,
     CategoryId TEXT NOT NULL REFERENCES Categories (id),
     Clue TEXT NOT NULL,
-    Value TEXT NOT NULL,
+    Value INTEGER,
     Answer TEXT NOT NULL,
     DailyDouble BOOLEAN NOT NULL DEFAULT FALSE,
-    DailyDoubleWager TEXT,
+    DailyDoubleWager INTEGER,
     TripleStumper BOOLEAN NOT NULL DEFAULT FALSE
 );
 
@@ -58,20 +58,19 @@ CREATE TABLE GameContestants (
     GameId TEXT NOT NULL REFERENCES Games (id),
     ContestantId TEXT NOT NULL REFERENCES Contestants (id),
     Winner BOOLEAN NOT NULL DEFAULT FALSE,
-    JeopardyTotal TEXT,
-    DoubleJeopardyTotal TEXT,
-    FinalJeopardyTotal TEXT,
-    FinalJeopardyWager TEXT,
-    FinalJeopardyCorrect BOOLEAN DEFAULT FALSE
+    JeopardyTotal INTEGER,
+    DoubleJeopardyTotal INTEGER,
+    FinalJeopardyTotal INTEGER,
+    FinalJeopardyWager INTEGER
 );
 
 CREATE TABLE ClueRights ( /* Answered clue correctly */
-    ClueId TEXT NOT NULL REFERENCES Games (id),
+    ClueId TEXT NOT NULL REFERENCES Clues (id),
     ContestantId TEXT NOT NULL REFERENCES Contestants (id)
 );
 
 CREATE TABLE ClueWrongs ( /* Answered clue incorrectly */
-    ClueId TEXT NOT NULL REFERENCES Games (id),
+    ClueId TEXT NOT NULL REFERENCES Clues (id),
     ContestantId TEXT NOT NULL REFERENCES Contestants (id)
 );
 

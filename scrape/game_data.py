@@ -18,6 +18,7 @@ class Game(object):
         self.before_double = self.check_double()
         self.contestants = self.set_contestants()
         self.rounds = self.set_rounds()
+        self.set_winners()
 
     def check_double(self):
         if(datetime.datetime.strptime(self.air_date, '%A, %B %d, %Y').isoformat() < "2001-11-26T00:00:00"):
@@ -46,8 +47,26 @@ class Game(object):
             id = people[i].find("a")["href"].split("=")[1]
             name = people[i].find("a").get_text()
             quick_access[name.split(" ")[0]] = id
-            contestants.append(Contestant(id, name, parse_string.group(2).replace(" originally", ""), parse_string.group(4), self.html))
+            contestants.append(Contestant(id, name, parse_string.group(2).replace(" originally", ""), parse_string.group(4), self.html, i))
         return contestants
+
+    def set_winners(self):
+        all_totals = [i.game_status.final_jeopardy_total for i in self.contestants]
+        biggest = 0
+        index = 0
+        tie = False
+        for i in xrange(len(all_totals)):
+            if(biggest == all_totals[i]):
+                tie = True
+            elif(biggest < all_totals[i]):
+                tie = False
+                biggest = all_totals[i]
+                index = i
+        if not tie:
+            self.contestants[index].game_status.set_winner()
+        else:
+            if(all_totals[0] == 0 and all_totals[1] == 0 and all_totals[2] == 0):
+                return
 
     def get_data(self):
         return {
@@ -111,7 +130,7 @@ class Category(object):
     def get_data(self):
         return {
             "id": str(self.id),
-            "category": self.name,
+            "name": self.name,
             "clues": [i.get_data() for i in self.clues]
         }
 
@@ -136,10 +155,10 @@ class Clue(object):
         if(value):
             if value[0] == "D":
                 self.daily_double = True
-                self.daily_double_wager = re.sub("[$,]", "", value.split(" ")[1])
-                self.value = self.set_dd_value()
+                self.daily_double_wager = int(re.sub("[$,]", "", value.split(" ")[1]))
+                self.value = int(self.set_dd_value())
             else:
-                self.value = value.replace("$", "")
+                self.value = int(value.replace("$", ""))
 
     def set_dd_value(self):
         if(self.round == 1):
@@ -180,19 +199,19 @@ class Clue(object):
             "daily_double": self.daily_double,
             "daily_double_wager": self.daily_double_wager,
             "triple_stumper": self.triple_stumper,
-            "rights": self.rights if len(self.rights) > 0 else None,
-            "wrongs": self.wrongs if len(self.wrongs) > 0 else None
+            "rights": self.rights,
+            "wrongs": self.wrongs
         }
 
 class Contestant(object):
 
-    def __init__(self, id, name, profession, hometown, html):
+    def __init__(self, id, name, profession, hometown, html, slot):
         self.id = id
         self.first_name = name.split(" ")[0]
         self.last_name = " ".join(name.split(" ")[1:])
         self.profession = profession
         self.hometown = hometown
-        self.game_status = GameContestant(html)
+        self.game_status = GameContestant(self.first_name, html, slot)
 
     def get_data(self):
         return {
@@ -200,18 +219,38 @@ class Contestant(object):
             "first_name": self.first_name,
             "last_name": self.last_name,
             "profession": self.profession,
-            "hometown": self.hometown,
+            "home_town": self.hometown,
             "game_status": self.game_status.get_data()
         }
 
 class GameContestant(object):
 
-    def __init__(self, html):
+    def __init__(self, fn, html, slot):
         self.winner = False
-        self.jeopardy_total = 0
-        self.double_jeopardy_total = 0
-        self.final_jeopardy_total = 0
-        self.final_jeopardy_wager = 0
+        self.jeopardy_total = None
+        self.double_jeopardy_total = None
+        self.final_jeopardy_total = None
+        self.final_jeopardy_wager = None
+        self.set_totals(fn, html, slot)
+        self.set_wager(fn, html, slot)
+
+    def set_totals(self, fn, html, slot):
+        first_round = html.find(id='jeopardy_round').findAll(class_=re.compile("score_positive|score_negative"))
+        self.jeopardy_total = int(re.sub("[$,]", "", first_round[(0-slot)-1].get_text())) if first_round is not None else None
+        second_round = html.find(id='double_jeopardy_round').findAll(class_=re.compile("score_positive|score_negative"))
+        self.double_jeopardy_total = int(re.sub("[$,]", "", second_round[(0-slot)-1].get_text())) if second_round is not None else None
+        third_round = html.find(id='final_jeopardy_round').findAll(class_=re.compile("score_positive|score_negative"))
+        self.final_jeopardy_total = int(re.sub("[$,]", "", third_round[(0-slot)-4].get_text())) if third_round is not None else None
+
+    def set_wager(self, fn, html, slot):
+        new_html = BeautifulSoup(html.find(id='final_jeopardy_round').find(class_='category').find("div")["onmouseover"], "html.parser").findAll("td")
+        if(new_html):
+            for i in xrange(len(new_html)):
+                if(new_html[i].get_text() == fn):
+                    self.final_jeopardy_wager = int(re.sub("[$,]", "", new_html[i+2].get_text()))
+
+    def set_winner(self):
+        self.winner = True
 
     def get_data(self):
         return {
