@@ -30,7 +30,7 @@ def by_episode(conn, cur, link, season):
 if __name__ == "__main__":
     conn, cur = pg.connect()
 
-    if sys.argv[1] == '--ep':
+    if sys.argv[1] == '--episode':
         by_episode(conn, cur, sys.argv[2], sys.argv[3])
     else:
         if len(sys.argv) == 3:

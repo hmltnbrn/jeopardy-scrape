@@ -43,11 +43,10 @@ class Game(object):
         contestants = []
         people = self.html.findAll(class_='contestants')
         for i in xrange(len(people)):
-            parse_string = re.search('( a | an )(.*)( from )(.*)', people[i].get_text())
             id = people[i].find("a")["href"].split("=")[1]
             name = people[i].find("a").get_text()
             quick_access[name.split(" ")[0]] = id
-            contestants.append(Contestant(id, name, parse_string.group(2).replace(" originally", ""), parse_string.group(4), self.html, i))
+            contestants.append(Contestant(id, name, people[i].get_text(), self.html, i))
         return contestants
 
     def set_winners(self):
@@ -67,6 +66,9 @@ class Game(object):
         else:
             if(all_totals[0] == 0 and all_totals[1] == 0 and all_totals[2] == 0):
                 return
+
+    def get_tiebreaker_winner(self):
+        pass
 
     def get_data(self):
         return {
@@ -122,9 +124,11 @@ class Category(object):
             question = self.html[i].find(class_="clue_text")
             answer = self.answer_div.findAll("div")[index] if self.answer_div is not None else self.html[i].find("div")
             if(value and question and answer):
-                clues.append(Clue(value.find(text=True), question.get_text(), BeautifulSoup(answer["onmouseover"], "html.parser").find(class_="correct_response").get_text(), answer["onmouseover"], i, self.round, self.before_double))
+                if(question.get_text() != "="):
+                    clues.append(Clue(value.find(text=True), question.get_text(), BeautifulSoup(answer["onmouseover"], "html.parser").find(class_="correct_response").get_text(), answer["onmouseover"], i, self.round, self.before_double))
             elif(question and answer):
-                clues.append(Clue("", question.get_text(), BeautifulSoup(answer["onmouseover"], "html.parser").find(class_=re.compile("correct")).get_text(), answer["onmouseover"], i, self.round, self.before_double))
+                if(question.get_text() != "="):
+                    clues.append(Clue("", question.get_text(), BeautifulSoup(answer["onmouseover"], "html.parser").find(class_=re.compile("correct")).get_text(), answer["onmouseover"], i, self.round, self.before_double))
         return clues
 
     def get_data(self):
@@ -205,19 +209,28 @@ class Clue(object):
 
 class Contestant(object):
 
-    def __init__(self, id, name, profession, hometown, html, slot):
+    def __init__(self, id, name, intro, html, slot):
         self.id = id
         self.first_name = name.split(" ")[0]
         self.last_name = " ".join(name.split(" ")[1:])
-        self.profession = profession
-        self.hometown = hometown
+        self.profession = None
+        self.hometown = None
         self.game_status = GameContestant(self.first_name, html, slot)
+        self.parse_intro(intro)
+
+    def parse_intro(self, intro):
+        parse_string = re.search('^(.*),(\sa\s|\san\s)?(.*?)(\sfrom\s)(.*?)(\s\(.*\))?$', intro)
+        if parse_string:
+            profession = parse_string.group(3).strip().replace(" originally", "")
+            self.profession = profession if profession else None
+            hometown = parse_string.group(5).strip()
+            self.hometown = hometown if hometown else None
 
     def get_data(self):
         return {
             "id": str(self.id),
-            "first_name": self.first_name,
-            "last_name": self.last_name,
+            "first_name": self.first_name if self.first_name else None,
+            "last_name": self.last_name if self.last_name else None,
             "profession": self.profession,
             "home_town": self.hometown,
             "game_status": self.game_status.get_data()
@@ -235,19 +248,27 @@ class GameContestant(object):
         self.set_wager(fn, html, slot)
 
     def set_totals(self, fn, html, slot):
-        first_round = html.find(id='jeopardy_round').findAll(class_=re.compile("score_positive|score_negative"))
-        self.jeopardy_total = int(re.sub("[$,]", "", first_round[(0-slot)-1].get_text())) if first_round is not None else None
-        second_round = html.find(id='double_jeopardy_round').findAll(class_=re.compile("score_positive|score_negative"))
-        self.double_jeopardy_total = int(re.sub("[$,]", "", second_round[(0-slot)-1].get_text())) if second_round is not None else None
-        third_round = html.find(id='final_jeopardy_round').findAll(class_=re.compile("score_positive|score_negative"))
-        self.final_jeopardy_total = int(re.sub("[$,]", "", third_round[(0-slot)-4].get_text())) if third_round is not None else None
+        first_round_html = html.find(id='jeopardy_round')
+        if(first_round_html):
+            first_round = first_round_html.findAll(class_=re.compile("score_positive|score_negative"))
+            self.jeopardy_total = int(re.sub("[$,]", "", first_round[(0-slot)-1].get_text())) if first_round is not None else None
+        second_round_html = html.find(id='double_jeopardy_round')
+        if(second_round_html):
+            second_round = second_round_html.findAll(class_=re.compile("score_positive|score_negative"))
+            self.double_jeopardy_total = int(re.sub("[$,]", "", second_round[(0-slot)-1].get_text())) if second_round is not None else None
+        third_round_html = html.find(id='final_jeopardy_round')
+        if(third_round_html):
+            third_round = third_round_html.findAll(class_=re.compile("score_positive|score_negative"))
+            self.final_jeopardy_total = int(re.sub("[$,]", "", third_round[(0-slot)-4].get_text())) if third_round is not None else None
 
     def set_wager(self, fn, html, slot):
-        new_html = BeautifulSoup(html.find(id='final_jeopardy_round').find(class_='category').find("div")["onmouseover"], "html.parser").findAll("td")
-        if(new_html):
-            for i in xrange(len(new_html)):
-                if(new_html[i].get_text() == fn):
-                    self.final_jeopardy_wager = int(re.sub("[$,]", "", new_html[i+2].get_text()))
+        final_round = html.find(id='final_jeopardy_round')
+        if(final_round):
+            new_html = BeautifulSoup(final_round.find(class_='category').find("div")["onmouseover"], "html.parser").findAll("td")
+            if(new_html):
+                for i in xrange(len(new_html)):
+                    if(new_html[i].get_text() == fn):
+                        self.final_jeopardy_wager = int(re.sub("[$,]", "", new_html[i+2].get_text()))
 
     def set_winner(self):
         self.winner = True
