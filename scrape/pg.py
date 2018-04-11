@@ -15,9 +15,9 @@ def insert_once(cur, table, data):
     )
 
 def connect():
-    with open('../database/credentials.json') as cred_file:
-        cred = json.load(cred_file)
-    conn = psycopg2.connect(host=cred["host"],database=cred["database"], user=cred["user"], password=cred["password"])
+    with open('../credentials/credentials.json') as cred_file:
+        creds = json.load(cred_file)
+    conn = psycopg2.connect(host=creds["host"],database=creds["database"], user=creds["user"], password=creds["password"])
     cur = conn.cursor()
     return conn, cur
 

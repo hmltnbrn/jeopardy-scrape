@@ -48,5 +48,5 @@ Thumbs.db
 /scrape/*.json
 /scrape/*.csv
 
-# Credentials
-/database/credentials.json
+# Credentials/keys
+/credentials

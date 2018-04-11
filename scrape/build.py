@@ -1,4 +1,13 @@
 import pg
+from genderize import Genderize
+import geocoder
+import json
+
+with open('../credentials/keys.json') as key_file:
+    keys = json.load(key_file)
+
+def get_sex(name):
+    return Genderize().get([name])
 
 def games(cur, data):
     pg.insert(cur, "Games", [(data["id"], data["air_date"], data["season"], data["show_number"], data["before_double"])])
@@ -7,7 +16,19 @@ def contestants(cur, data, game_id):
     contestants = []
     game_contestants = []
     for i in data:
-        contestants.append((i["id"], i["first_name"], i["last_name"], i["profession"], i["home_town"]))
+        sex = None
+        probability = None
+        lat = None
+        lng = None
+        if(i["first_name"]):
+            sex_data = get_sex(i["first_name"])[0]
+            sex = sex_data["gender"]
+            probability = sex_data["probability"]
+        if(i["home_town"]):
+            geo = geocoder.google(location=i["home_town"], key=keys["gmaps_api_key"])
+            lat, lng = geo.latlng
+            # lng = geo["latlng"][1]
+        contestants.append((i["id"], i["first_name"], i["last_name"], i["profession"], i["home_town"], sex, probability, lat, lng))
         game_contestants.append((game_id, i["id"], i["game_status"]["winner"], i["game_status"]["jeopardy_total"], i["game_status"]["double_jeopardy_total"], i["game_status"]["final_jeopardy_total"], i["game_status"]["final_jeopardy_wager"]))
     pg.insert_once(cur, "Contestants", contestants)
     pg.insert(cur, "GameContestants", game_contestants)

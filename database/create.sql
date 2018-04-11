@@ -51,7 +51,10 @@ CREATE TABLE Contestants (
     LastName TEXT,
     Profession TEXT,
     HomeTown TEXT,
-    Sex TEXT
+    Sex TEXT, /* Retrieved through Genderize.io */
+    SexProbability DECIMAL, /* Retrieved through Genderize.io */
+    Latitude TEXT, /* Retrieved through Google Maps Geocoding */
+    Longitude TEXT /* Retrieved through Google Maps Geocoding */
 );
 
 CREATE TABLE GameContestants (
