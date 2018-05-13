@@ -19,7 +19,9 @@ CREATE TABLE Games (
     AirDate TEXT NOT NULL,
     Season TEXT NOT NULL,
     ShowNumber TEXT NOT NULL,
-    BeforeDouble BOOLEAN NOT NULL
+    BeforeDouble BOOLEAN NOT NULL,
+    ContainedTiebreaker BOOLEAN NOT NULL DEFAULT FALSE,
+    NoWinner BOOLEAN NOT NULL DEFAULT FALSE
 );
 
 CREATE TABLE Rounds (
@@ -51,8 +53,8 @@ CREATE TABLE Contestants (
     LastName TEXT,
     Profession TEXT,
     HomeTown TEXT,
-    Sex TEXT, /* Retrieved through Genderize.io */
-    SexProbability DECIMAL, /* Retrieved through Genderize.io */
+    Gender TEXT, /* Retrieved through Genderize.io */
+    GenderProbability DECIMAL, /* Retrieved through Genderize.io */
     Latitude TEXT, /* Retrieved through Google Maps Geocoding */
     Longitude TEXT /* Retrieved through Google Maps Geocoding */
 );
@@ -60,6 +62,7 @@ CREATE TABLE Contestants (
 CREATE TABLE GameContestants (
     GameId TEXT NOT NULL REFERENCES Games (id),
     ContestantId TEXT NOT NULL REFERENCES Contestants (id),
+    Position INTEGER,
     Winner BOOLEAN NOT NULL DEFAULT FALSE,
     JeopardyTotal INTEGER,
     DoubleJeopardyTotal INTEGER,

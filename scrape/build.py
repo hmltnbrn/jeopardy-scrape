@@ -6,30 +6,29 @@ import json
 with open('../credentials/keys.json') as key_file:
     keys = json.load(key_file)
 
-def get_sex(name):
+def get_gender(name):
     return Genderize().get([name])
 
 def games(cur, data):
-    pg.insert(cur, "Games", [(data["id"], data["air_date"], data["season"], data["show_number"], data["before_double"])])
+    pg.insert(cur, "Games", [(data["id"], data["air_date"], data["season"], data["show_number"], data["before_double"], data["contained_tiebreaker"], data["no_winner"])])
 
 def contestants(cur, data, game_id):
     contestants = []
     game_contestants = []
     for i in data:
-        sex = None
+        gender = None
         probability = None
         lat = None
         lng = None
         if(i["first_name"]):
-            sex_data = get_sex(i["first_name"])[0]
-            sex = sex_data["gender"]
-            probability = sex_data["probability"]
+            gender_data = get_gender(i["first_name"])[0]
+            gender = gender_data["gender"]
+            probability = gender_data["probability"] if gender_data["gender"] is not None else None
         if(i["home_town"]):
             geo = geocoder.google(location=i["home_town"], key=keys["gmaps_api_key"])
             lat, lng = geo.latlng
-            # lng = geo["latlng"][1]
-        contestants.append((i["id"], i["first_name"], i["last_name"], i["profession"], i["home_town"], sex, probability, lat, lng))
-        game_contestants.append((game_id, i["id"], i["game_status"]["winner"], i["game_status"]["jeopardy_total"], i["game_status"]["double_jeopardy_total"], i["game_status"]["final_jeopardy_total"], i["game_status"]["final_jeopardy_wager"]))
+        contestants.append((i["id"], i["first_name"], i["last_name"], i["profession"], i["home_town"], gender, probability, lat, lng))
+        game_contestants.append((game_id, i["id"], i["game_status"]["position"], i["game_status"]["winner"], i["game_status"]["jeopardy_total"], i["game_status"]["double_jeopardy_total"], i["game_status"]["final_jeopardy_total"], i["game_status"]["final_jeopardy_wager"]))
     pg.insert_once(cur, "Contestants", contestants)
     pg.insert(cur, "GameContestants", game_contestants)
 

@@ -16,6 +16,8 @@ class Game(object):
         self.season = str(season)
         self.show_number, self.air_date = self.html.find(id='game_title').find('h1').find(text=True).split(' - ')
         self.before_double = self.check_double()
+        self.contained_tiebreaker = False
+        self.no_winner = False
         self.contestants = self.set_contestants()
         self.rounds = self.set_rounds()
         self.set_winners()
@@ -45,9 +47,17 @@ class Game(object):
         for i in xrange(len(people)):
             id = people[i].find("a")["href"].split("=")[1]
             name = people[i].find("a").get_text()
-            quick_access[name.split(" ")[0]] = id
+            quick_access[self.get_used_name(name.split(" ")[0], i)] = id
             contestants.append(Contestant(id, name, people[i].get_text(), self.html, i))
         return contestants
+
+    def get_used_name(self, contestant_name, index):
+        first_round_html = self.html.find(id='jeopardy_round')
+        if(first_round_html):
+            nicknames = self.html.findAll(class_='score_player_nickname')
+            if(len(nicknames) > 0):
+                return nicknames[2 - index].get_text()
+        return contestant_name
 
     def set_winners(self):
         all_totals = [i.game_status.final_jeopardy_total for i in self.contestants]
@@ -63,12 +73,38 @@ class Game(object):
                 index = i
         if not tie:
             self.contestants[index].game_status.set_winner()
+            self.contestants[index].game_status.set_position(1)
+            self.set_positions()
         else:
             if(all_totals[0] == 0 and all_totals[1] == 0 and all_totals[2] == 0):
+                self.no_winner = True
                 return
+            else:
+                self.contained_tiebreaker = True
+                self.set_positions()
+                self.get_tiebreaker_winner()
+
+    def set_positions(self):
+        final_round_html = self.html.find(id='final_jeopardy_round')
+        if(final_round_html):
+            final_round_position = final_round_html.findAll(class_="score_remarks")
+            for i in xrange(0, 3):
+                if re.match('2nd', final_round_position[i].get_text()):
+                    self.contestants[2 - i].game_status.set_position(2)
+                elif re.match('3rd', final_round_position[i].get_text()):
+                    self.contestants[2 - i].game_status.set_position(3)
+        return
 
     def get_tiebreaker_winner(self):
-        pass
+        final_round_html = self.html.find(id='final_jeopardy_round')
+        if(final_round_html):
+            final_round_position = final_round_html.findAll(class_="score_remarks")
+            for i in xrange(0, 3):
+                if not re.match('(2nd|3rd)', final_round_position[i].get_text()):
+                    self.contestants[2 - i].game_status.set_winner()
+                    self.contestants[2 - i].game_status.set_position(1)
+                    return
+        return
 
     def get_data(self):
         return {
@@ -77,6 +113,8 @@ class Game(object):
             "show_number": self.show_number.split(" #")[1],
             "air_date": datetime.datetime.strptime(self.air_date, '%A, %B %d, %Y').isoformat(),
             "before_double": self.before_double,
+            "contained_tiebreaker": self.contained_tiebreaker,
+            "no_winner": self.no_winner,
             "rounds": [i.get_data() for i in self.rounds],
             "contestants": [i.get_data() for i in self.contestants]
         }
@@ -239,6 +277,7 @@ class Contestant(object):
 class GameContestant(object):
 
     def __init__(self, fn, html, slot):
+        self.position = None
         self.winner = False
         self.jeopardy_total = None
         self.double_jeopardy_total = None
@@ -270,11 +309,15 @@ class GameContestant(object):
                     if(new_html[i].get_text() == fn):
                         self.final_jeopardy_wager = int(re.sub("[$,]", "", new_html[i+2].get_text()))
 
+    def set_position(self, pos):
+        self.position = pos
+
     def set_winner(self):
         self.winner = True
 
     def get_data(self):
         return {
+            "position": self.position,
             "winner": self.winner,
             "jeopardy_total": self.jeopardy_total,
             "double_jeopardy_total": self.double_jeopardy_total,
