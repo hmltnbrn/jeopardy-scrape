@@ -290,15 +290,15 @@ class GameContestant(object):
         first_round_html = html.find(id='jeopardy_round')
         if(first_round_html):
             first_round = first_round_html.findAll(class_=re.compile("score_positive|score_negative"))
-            self.jeopardy_total = int(re.sub("[$,]", "", first_round[(0-slot)-1].get_text())) if first_round is not None else None
+            self.jeopardy_total = int(re.sub("[$,]", "", first_round[(0-slot)-1].get_text())) if first_round is not None and len(first_round) != 0 else None
         second_round_html = html.find(id='double_jeopardy_round')
         if(second_round_html):
             second_round = second_round_html.findAll(class_=re.compile("score_positive|score_negative"))
-            self.double_jeopardy_total = int(re.sub("[$,]", "", second_round[(0-slot)-1].get_text())) if second_round is not None else None
-        third_round_html = html.find(id='final_jeopardy_round')
+            self.double_jeopardy_total = int(re.sub("[$,]", "", second_round[(0-slot)-1].get_text())) if second_round is not None and len(second_round) != 0 else None
+        third_round_html = html.find(id='final_jeopardy_round1')
         if(third_round_html):
             third_round = third_round_html.findAll(class_=re.compile("score_positive|score_negative"))
-            self.final_jeopardy_total = int(re.sub("[$,]", "", third_round[(0-slot)-4].get_text())) if third_round is not None else None
+            self.final_jeopardy_total = int(re.sub("[$,]", "", third_round[(0-slot)-4].get_text())) if third_round is not None and len(third_round) != 0 else None
 
     def set_wager(self, fn, html, slot):
         final_round = html.find(id='final_jeopardy_round')
