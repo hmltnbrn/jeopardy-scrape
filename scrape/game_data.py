@@ -1,5 +1,5 @@
 import sys
-import urllib2
+from urllib.request import urlopen
 import json
 import re
 import datetime
@@ -12,12 +12,13 @@ class Game(object):
 
     def __init__(self, link, season):
         self.link = link
-        self.html = BeautifulSoup(urllib2.urlopen(link), "html.parser")
+        self.html = BeautifulSoup(urlopen(link), "lxml") # requires the lxml Python module to be installed
         self.season = str(season)
         self.show_number, self.air_date = self.html.find(id='game_title').find('h1').find(text=True).split(' - ')
         self.before_double = self.check_double()
         self.contained_tiebreaker = False
         self.no_winner = False
+        self.unknown_winner = False
         self.contestants = self.set_contestants()
         self.rounds = self.set_rounds()
         self.set_winners()
@@ -44,7 +45,7 @@ class Game(object):
     def set_contestants(self):
         contestants = []
         people = self.html.findAll(class_='contestants')
-        for i in xrange(len(people)):
+        for i in range(len(people)):
             id = people[i].find("a")["href"].split("=")[1]
             name = people[i].find("a").get_text()
             quick_access[self.get_used_name(name.split(" ")[0], i)] = id
@@ -64,31 +65,34 @@ class Game(object):
         biggest = 0
         index = 0
         tie = False
-        for i in xrange(len(all_totals)):
-            if(biggest == all_totals[i]):
-                tie = True
-            elif(biggest < all_totals[i]):
-                tie = False
-                biggest = all_totals[i]
-                index = i
-        if not tie:
-            self.contestants[index].game_status.set_winner()
-            self.contestants[index].game_status.set_position(1)
-            self.set_positions()
-        else:
-            if(all_totals[0] == 0 and all_totals[1] == 0 and all_totals[2] == 0):
-                self.no_winner = True
-                return
-            else:
-                self.contained_tiebreaker = True
+        if(not all(j is None for j in all_totals)):
+            for i in range(len(all_totals)):
+                if(biggest == all_totals[i]):
+                    tie = True
+                elif(biggest < all_totals[i]):
+                    tie = False
+                    biggest = all_totals[i]
+                    index = i
+            if not tie:
+                self.contestants[index].game_status.set_winner()
+                self.contestants[index].game_status.set_position(1)
                 self.set_positions()
-                self.get_tiebreaker_winner()
+            else:
+                if(all_totals[0] == 0 and all_totals[1] == 0 and all_totals[2] == 0):
+                    self.no_winner = True
+                    return
+                else:
+                    self.contained_tiebreaker = True
+                    self.set_positions()
+                    self.get_tiebreaker_winner()
+        else:
+            self.unknown_winner = True
 
     def set_positions(self):
         final_round_html = self.html.find(id='final_jeopardy_round')
         if(final_round_html):
             final_round_position = final_round_html.findAll(class_="score_remarks")
-            for i in xrange(0, 3):
+            for i in range(0, 3):
                 if re.match('2nd', final_round_position[i].get_text()):
                     self.contestants[2 - i].game_status.set_position(2)
                 elif re.match('3rd', final_round_position[i].get_text()):
@@ -99,7 +103,7 @@ class Game(object):
         final_round_html = self.html.find(id='final_jeopardy_round')
         if(final_round_html):
             final_round_position = final_round_html.findAll(class_="score_remarks")
-            for i in xrange(0, 3):
+            for i in range(0, 3):
                 if not re.match('(2nd|3rd)', final_round_position[i].get_text()):
                     self.contestants[2 - i].game_status.set_winner()
                     self.contestants[2 - i].game_status.set_position(1)
@@ -115,6 +119,7 @@ class Game(object):
             "before_double": self.before_double,
             "contained_tiebreaker": self.contained_tiebreaker,
             "no_winner": self.no_winner,
+            "unknown_winner": self.unknown_winner,
             "rounds": [i.get_data() for i in self.rounds],
             "contestants": [i.get_data() for i in self.contestants]
         }
@@ -132,7 +137,7 @@ class Round(object):
         categories = []
         cats = self.html.findAll(class_='category')
         clues = self.html.findAll(class_='clue')
-        for i in xrange(len(cats)):
+        for i in range(len(cats)):
             cat_name = cats[i].find(class_='category_name')
             if cat_name:
                 categories.append(Category(cat_name.find(text=True), clues[i:len(clues):6], self.id, self.before_double, self.html if self.name == 'Final Jeopardy!' else None, i))
@@ -157,16 +162,16 @@ class Category(object):
 
     def set_clues(self, index):
         clues = []
-        for i in xrange(len(self.html)):
+        for i in range(len(self.html)):
             value = self.html[i].find(class_="clue_value") if self.html[i].find(class_="clue_value_daily_double") is None else self.html[i].find(class_="clue_value_daily_double")
             question = self.html[i].find(class_="clue_text")
             answer = self.answer_div.findAll("div")[index] if self.answer_div is not None else self.html[i].find("div")
             if(value and question and answer):
                 if(question.get_text() != "="):
-                    clues.append(Clue(value.find(text=True), question.get_text(), BeautifulSoup(answer["onmouseover"], "html.parser").find(class_="correct_response").get_text(), answer["onmouseover"], i, self.round, self.before_double))
+                    clues.append(Clue(value.find(text=True), question.get_text(), BeautifulSoup(answer["onmouseover"], "lxml").find(class_="correct_response").get_text(), answer["onmouseover"], i, self.round, self.before_double))
             elif(question and answer):
                 if(question.get_text() != "="):
-                    clues.append(Clue("", question.get_text(), BeautifulSoup(answer["onmouseover"], "html.parser").find(class_=re.compile("correct")).get_text(), answer["onmouseover"], i, self.round, self.before_double))
+                    clues.append(Clue("", question.get_text(), BeautifulSoup(answer["onmouseover"], "lxml").find(class_=re.compile("correct")).get_text(), answer["onmouseover"], i, self.round, self.before_double))
         return clues
 
     def get_data(self):
@@ -217,19 +222,19 @@ class Clue(object):
             return None
 
     def set_rights(self, mouseover):
-        html = BeautifulSoup(mouseover, "html.parser")
+        html = BeautifulSoup(mouseover, "lxml")
         rights = html.findAll(class_="right")
-        return [quick_access[i.get_text()] for i in rights]
+        return [quick_access[i.get_text().replace('\\','')] for i in rights]
 
     def set_wrongs(self, mouseover):
         result = []
-        html = BeautifulSoup(mouseover, "html.parser")
+        html = BeautifulSoup(mouseover, "lxml")
         wrongs = html.findAll(class_="wrong")
         for i in wrongs:
             if i.get_text() == "Triple Stumper":
                 self.triple_stumper = True
             else:
-                result.append(quick_access[i.get_text()])
+                result.append(quick_access[i.get_text().replace('\\','')])
         return result
 
     def get_data(self):
@@ -257,7 +262,7 @@ class Contestant(object):
         self.parse_intro(intro)
 
     def parse_intro(self, intro):
-        parse_string = re.search('^(.*),(\sa\s|\san\s)?(.*?)(\sfrom\s)(.*?)(\s\(.*\))?$', intro)
+        parse_string = re.search(r'^(.*),(\sa\s|\san\s)?(.*?)(\sfrom\s)(.*?)(\s\(.*\))?$', intro)
         if parse_string:
             profession = parse_string.group(3).strip().replace(" originally", "")
             self.profession = profession if profession else None
@@ -295,17 +300,20 @@ class GameContestant(object):
         if(second_round_html):
             second_round = second_round_html.findAll(class_=re.compile("score_positive|score_negative"))
             self.double_jeopardy_total = int(re.sub("[$,]", "", second_round[(0-slot)-1].get_text())) if second_round is not None and len(second_round) != 0 else None
-        third_round_html = html.find(id='final_jeopardy_round1')
+        third_round_html = html.find(id='final_jeopardy_round')
         if(third_round_html):
             third_round = third_round_html.findAll(class_=re.compile("score_positive|score_negative"))
-            self.final_jeopardy_total = int(re.sub("[$,]", "", third_round[(0-slot)-4].get_text())) if third_round is not None and len(third_round) != 0 else None
+            if(len(third_round) == 6):
+                self.final_jeopardy_total = int(re.sub("[$,]", "", third_round[(0-slot)-4].get_text())) if third_round is not None and len(third_round) != 0 else None
+            elif(len(third_round) == 3):
+                self.final_jeopardy_total = int(re.sub("[$,]", "", third_round[(0-slot)-1].get_text())) if third_round is not None and len(third_round) != 0 else None
 
     def set_wager(self, fn, html, slot):
         final_round = html.find(id='final_jeopardy_round')
         if(final_round):
-            new_html = BeautifulSoup(final_round.find(class_='category').find("div")["onmouseover"], "html.parser").findAll("td")
+            new_html = BeautifulSoup(final_round.find(class_='category').find("div")["onmouseover"], "lxml").findAll("td")
             if(new_html):
-                for i in xrange(len(new_html)):
+                for i in range(len(new_html)):
                     if(new_html[i].get_text() == fn):
                         self.final_jeopardy_wager = int(re.sub("[$,]", "", new_html[i+2].get_text()))
 
@@ -331,7 +339,7 @@ def get(link, season):
     return game.get_data()
 
 if __name__ == "__main__":
-    print "Generating game data..."
+    print("Generating game data...")
 
     game = Game(sys.argv[1], sys.argv[2]) # first argument -- j-archive link | second -- season
 
@@ -339,4 +347,4 @@ if __name__ == "__main__":
 
     with open('game_data.json', 'w+') as f:
         json.dump(data, f)
-        print "Finished successfully"
+        print("Finished successfully")
