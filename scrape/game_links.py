@@ -6,14 +6,14 @@ from bs4 import BeautifulSoup
 base_url = "http://j-archive.com/showseason.php?season="
 
 def get_game_links(link):
-    html = BeautifulSoup(urlopen(link), "html.parser")
+    html = BeautifulSoup(urlopen(link), "lxml")
     links = html.find(id="content").find('table').findAll('td', {'align': 'left'})
     return [i.find('a')['href'] for i in links][::-1]
 
 def get_last_season():
     print("Finding last season...")
     link = "http://j-archive.com/listseasons.php"
-    html = BeautifulSoup(urlopen(link), "html.parser")
+    html = BeautifulSoup(urlopen(link), "lxml")
     seasons = html.find(id="content").find('table').findAll('a')
     return int(seasons[0].find(text=True).split(" ")[1])
 

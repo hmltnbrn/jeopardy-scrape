@@ -10,7 +10,11 @@ def get_gender(name):
     return Genderize().get([name])
 
 def games(cur, data):
-    pg.insert(cur, "Games", [(data["id"], data["air_date"], data["season"], data["show_number"], data["before_double"], data["contained_tiebreaker"], data["no_winner"], data["unknown_winner"])])
+    res = pg.insert_no_duplicate(cur, "games", [(data["id"], data["air_date"], data["season"], data["show_number"], data["before_double"], data["contained_tiebreaker"], data["all_star_game"], data["no_winner"], data["unknown_winner"])])
+    if(len(res) > 0):
+        return True
+    else:
+        return False
 
 def contestants(cur, data, game_id, findGender, findLocation):
     contestants = []
@@ -29,8 +33,8 @@ def contestants(cur, data, game_id, findGender, findLocation):
             lat, lng = geo.latlng
         contestants.append((i["id"], i["first_name"], i["last_name"], i["profession"], i["home_town"], gender, probability, lat, lng))
         game_contestants.append((game_id, i["id"], i["game_status"]["position"], i["game_status"]["winner"], i["game_status"]["jeopardy_total"], i["game_status"]["double_jeopardy_total"], i["game_status"]["final_jeopardy_total"], i["game_status"]["final_jeopardy_wager"]))
-    pg.insert_once(cur, "Contestants", contestants)
-    pg.insert(cur, "GameContestants", game_contestants)
+    pg.insert_once(cur, "contestants", contestants)
+    pg.insert(cur, "game_contestants", game_contestants)
 
 def clues(cur, data, category_id):
     clues = []
@@ -42,15 +46,15 @@ def clues(cur, data, category_id):
             rights.append((i["id"], i["rights"][j]))
         for k in range(len(i["wrongs"])):
             wrongs.append((i["id"], i["wrongs"][k]))
-    pg.insert(cur, "Clues", clues)
-    pg.insert(cur, "ClueRights", rights)
-    pg.insert(cur, "ClueWrongs", wrongs)
+    pg.insert(cur, "clues", clues)
+    pg.insert(cur, "clue_rights", rights)
+    pg.insert(cur, "clue_wrongs", wrongs)
 
 def categories(cur, data, game_id, round_id):
     categories = []
     for i in data:
         categories.append((i["id"], game_id, round_id, i["name"]))
-    pg.insert(cur, "Categories", categories)
+    pg.insert(cur, "categories", categories)
     for i in data:
         clues(cur, i["clues"], i["id"])
 

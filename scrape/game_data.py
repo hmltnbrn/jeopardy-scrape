@@ -17,6 +17,7 @@ class Game(object):
         self.show_number, self.air_date = self.html.find(id='game_title').find('h1').find(text=True).split(' - ')
         self.before_double = self.check_double()
         self.contained_tiebreaker = False
+        self.all_star_game = False
         self.no_winner = False
         self.unknown_winner = False
         self.contestants = self.set_contestants()
@@ -35,21 +36,24 @@ class Game(object):
         second_round = self.html.find(id='double_jeopardy_round')
         final_round = self.html.find(id='final_jeopardy_round')
         if first_round:
-            rounds.append(Round(1, "Jeopardy!", self.before_double, first_round))
+            rounds.append(Round(1, "Jeopardy!", self.before_double, self.all_star_game, first_round))
         if second_round:
-            rounds.append(Round(2, "Double Jeopardy!", self.before_double, second_round))
+            rounds.append(Round(2, "Double Jeopardy!", self.before_double, self.all_star_game, second_round))
         if final_round:
-            rounds.append(Round(3, "Final Jeopardy!", self.before_double, final_round))
+            rounds.append(Round(3, "Final Jeopardy!", self.before_double, self.all_star_game, final_round))
         return rounds
 
     def set_contestants(self):
         contestants = []
         people = self.html.findAll(class_='contestants')
-        for i in range(len(people)):
-            id = people[i].find("a")["href"].split("=")[1]
-            name = people[i].find("a").get_text()
-            quick_access[self.get_used_name(name.split(" ")[0], i)] = id
-            contestants.append(Contestant(id, name, people[i].get_text(), self.html, i))
+        if(len(people) == 9):
+            self.all_star_game = True
+        else:
+            for i in range(len(people)):
+                id = people[i].find("a")["href"].split("=")[1]
+                name = people[i].find("a").get_text()
+                quick_access[self.get_used_name(name.split(" ")[0], i)] = id
+                contestants.append(Contestant(id, name, people[i].get_text(), self.html, i))
         return contestants
 
     def get_used_name(self, contestant_name, index):
@@ -118,6 +122,7 @@ class Game(object):
             "air_date": datetime.datetime.strptime(self.air_date, '%A, %B %d, %Y').isoformat(),
             "before_double": self.before_double,
             "contained_tiebreaker": self.contained_tiebreaker,
+            "all_star_game": self.all_star_game,
             "no_winner": self.no_winner,
             "unknown_winner": self.unknown_winner,
             "rounds": [i.get_data() for i in self.rounds],
@@ -126,10 +131,11 @@ class Game(object):
 
 class Round(object):
 
-    def __init__(self, id, name, before_double, html):
+    def __init__(self, id, name, before_double, all_star_game, html):
         self.id = id
         self.name = name
         self.before_double = before_double
+        self.all_star_game = all_star_game
         self.html = html
         self.categories = self.set_categories()
 
@@ -140,7 +146,7 @@ class Round(object):
         for i in range(len(cats)):
             cat_name = cats[i].find(class_='category_name')
             if cat_name:
-                categories.append(Category(cat_name.find(text=True), clues[i:len(clues):6], self.id, self.before_double, self.html if self.name == 'Final Jeopardy!' else None, i))
+                categories.append(Category(cat_name.find(text=True), clues[i:len(clues):6], self.id, self.before_double, self.all_star_game, self.html if self.name == 'Final Jeopardy!' else None, i))
         return categories
 
     def get_data(self):
@@ -151,12 +157,13 @@ class Round(object):
 
 class Category(object):
 
-    def __init__(self, name, html, round, before_double, answer_div, index):
+    def __init__(self, name, html, round, before_double, all_star_game, answer_div, index):
         self.id = uuid.uuid4()
         self.name = name
         self.html = html
         self.round = round
         self.before_double = before_double
+        self.all_star_game = all_star_game
         self.answer_div = answer_div
         self.clues = self.set_clues(index)
 
@@ -168,10 +175,10 @@ class Category(object):
             answer = self.answer_div.findAll("div")[index] if self.answer_div is not None else self.html[i].find("div")
             if(value and question and answer):
                 if(question.get_text() != "="):
-                    clues.append(Clue(value.find(text=True), question.get_text(), BeautifulSoup(answer["onmouseover"], "lxml").find(class_="correct_response").get_text(), answer["onmouseover"], i, self.round, self.before_double))
+                    clues.append(Clue(value.find(text=True), question.get_text(), BeautifulSoup(answer["onmouseover"], "lxml").find(class_="correct_response").get_text(), answer["onmouseover"], i, self.round, self.before_double, self.all_star_game))
             elif(question and answer):
                 if(question.get_text() != "="):
-                    clues.append(Clue("", question.get_text(), BeautifulSoup(answer["onmouseover"], "lxml").find(class_=re.compile("correct")).get_text(), answer["onmouseover"], i, self.round, self.before_double))
+                    clues.append(Clue("", question.get_text(), BeautifulSoup(answer["onmouseover"], "lxml").find(class_=re.compile("correct")).get_text(), answer["onmouseover"], i, self.round, self.before_double, self.all_star_game))
         return clues
 
     def get_data(self):
@@ -183,7 +190,7 @@ class Category(object):
 
 class Clue(object):
 
-    def __init__(self, value, question, answer, mouseover_text, slot, round, before_double):
+    def __init__(self, value, question, answer, mouseover_text, slot, round, before_double, all_star_game):
         self.id = uuid.uuid4()
         self.value = None
         self.question = question
@@ -191,6 +198,7 @@ class Clue(object):
         self.daily_double = False
         self.daily_double_wager = None
         self.triple_stumper = False
+        self.all_star_game = all_star_game
         self.rights = self.set_rights(mouseover_text)
         self.wrongs = self.set_wrongs(mouseover_text)
         self.slot = slot
@@ -201,8 +209,9 @@ class Clue(object):
     def handle_value(self, value):
         if(value):
             if value[0] == "D":
+                daily_double_value = re.sub("[$,]", "", value.split(" ")[1])
                 self.daily_double = True
-                self.daily_double_wager = int(re.sub("[$,]", "", value.split(" ")[1]))
+                self.daily_double_wager = int(daily_double_value) if daily_double_value is not '' else None
                 self.value = int(self.set_dd_value())
             else:
                 self.value = int(value.replace("$", ""))
@@ -224,7 +233,10 @@ class Clue(object):
     def set_rights(self, mouseover):
         html = BeautifulSoup(mouseover, "lxml")
         rights = html.findAll(class_="right")
-        return [quick_access[i.get_text().replace('\\','')] for i in rights]
+        if(self.all_star_game):
+            return []
+        else:
+            return [quick_access[i.get_text().replace('\\','')] for i in rights]
 
     def set_wrongs(self, mouseover):
         result = []
@@ -234,7 +246,8 @@ class Clue(object):
             if i.get_text() == "Triple Stumper":
                 self.triple_stumper = True
             else:
-                result.append(quick_access[i.get_text().replace('\\','')])
+                if(not self.all_star_game):
+                    result.append(quick_access[i.get_text().replace('\\','')])
         return result
 
     def get_data(self):

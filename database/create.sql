@@ -1,91 +1,95 @@
 /* START DROPS */
 
 DROP TABLE IF EXISTS
-  ClueWrongs
-, ClueRights
-, GameContestants
-, Contestants
-, Clues
-, Categories
-, Rounds
-, Games;
+  clue_wrongs
+, clue_rights
+, game_contestants
+, contestants
+, clues
+, categories
+, rounds
+, games;
 
 /* END DROPS */
 
 /* START CREATES */
 
-CREATE TABLE Games (
-  Id TEXT PRIMARY KEY NOT NULL, /* J-Archive Game ID */
-  AirDate TEXT NOT NULL,
-  Season TEXT NOT NULL,
-  ShowNumber TEXT NOT NULL,
-  BeforeDouble BOOLEAN NOT NULL,
-  ContainedTiebreaker BOOLEAN NOT NULL DEFAULT FALSE,
-  NoWinner BOOLEAN NOT NULL DEFAULT FALSE,
-  UnknownWinner BOOLEAN NOT NULL DEFAULT FALSE
+CREATE TABLE games (
+  id TEXT PRIMARY KEY NOT NULL, /* J-Archive Game ID */
+  air_date TEXT NOT NULL,
+  season TEXT NOT NULL,
+  show_number TEXT NOT NULL,
+  before_double BOOLEAN NOT NULL,
+  contained_tiebreaker BOOLEAN NOT NULL DEFAULT FALSE,
+  all_star_game BOOLEAN NOT NULL DEFAULT FALSE,
+  no_winner BOOLEAN NOT NULL DEFAULT FALSE,
+  unknown_winner BOOLEAN NOT NULL DEFAULT FALSE
 );
 
-CREATE TABLE Rounds (
-  Id SERIAL PRIMARY KEY NOT NULL,
-  Name TEXT NOT NULL
+CREATE TABLE rounds (
+  id SERIAL PRIMARY KEY NOT NULL,
+  round_name TEXT NOT NULL
 ); /* Jeopardy!, Double Jeopardy!, Final Jeopardy! */
 
-CREATE TABLE Categories (
-  Id TEXT PRIMARY KEY NOT NULL,
-  GameId TEXT NOT NULL REFERENCES Games (id),
-  RoundId INTEGER NOT NULL REFERENCES Rounds (id),
-  Name TEXT
+CREATE TABLE categories (
+  id TEXT PRIMARY KEY NOT NULL,
+  game_id TEXT NOT NULL REFERENCES games (id),
+  round_id INTEGER NOT NULL REFERENCES rounds (id),
+  category_name TEXT
 );
 
-CREATE TABLE Clues (
-  Id TEXT PRIMARY KEY NOT NULL,
-  CategoryId TEXT NOT NULL REFERENCES Categories (id),
-  Clue TEXT NOT NULL,
-  Value INTEGER,
-  Answer TEXT NOT NULL,
-  DailyDouble BOOLEAN NOT NULL DEFAULT FALSE,
-  DailyDoubleWager INTEGER,
-  TripleStumper BOOLEAN NOT NULL DEFAULT FALSE
+CREATE TABLE clues (
+  id TEXT PRIMARY KEY NOT NULL,
+  category_id TEXT NOT NULL REFERENCES categories (id),
+  clue_text TEXT NOT NULL,
+  clue_value INTEGER,
+  answer TEXT NOT NULL,
+  daily_double BOOLEAN NOT NULL DEFAULT FALSE,
+  daily_double_wager INTEGER,
+  triple_stumper BOOLEAN NOT NULL DEFAULT FALSE
 );
 
-CREATE TABLE Contestants (
-  Id TEXT PRIMARY KEY NOT NULL, /* J-Archive Contestant ID */
-  FirstName TEXT,
-  LastName TEXT,
-  Profession TEXT,
-  HomeTown TEXT,
-  Gender TEXT, /* Retrieved through Genderize.io */
-  GenderProbability DECIMAL, /* Retrieved through Genderize.io */
-  Latitude TEXT, /* Retrieved through Google Maps Geocoding */
-  Longitude TEXT /* Retrieved through Google Maps Geocoding */
+CREATE TABLE contestants (
+  id TEXT PRIMARY KEY NOT NULL, /* J-Archive Contestant ID */
+  first_name TEXT,
+  last_name TEXT,
+  profession TEXT,
+  hometown TEXT,
+  gender TEXT, /* Retrieved through Genderize.io */
+  gender_probability DECIMAL, /* Retrieved through Genderize.io */
+  latitude TEXT, /* Retrieved through Google Maps Geocoding */
+  longitude TEXT /* Retrieved through Google Maps Geocoding */
 );
 
-CREATE TABLE GameContestants (
-  GameId TEXT NOT NULL REFERENCES Games (id),
-  ContestantId TEXT NOT NULL REFERENCES Contestants (id),
-  Position INTEGER,
-  Winner BOOLEAN NOT NULL DEFAULT FALSE,
-  JeopardyTotal INTEGER,
-  DoubleJeopardyTotal INTEGER,
-  FinalJeopardyTotal INTEGER,
-  FinalJeopardyWager INTEGER
+CREATE TABLE game_contestants (
+  game_id TEXT NOT NULL REFERENCES games (id),
+  contestant_id TEXT NOT NULL REFERENCES contestants (id),
+  position INTEGER,
+  winner BOOLEAN NOT NULL DEFAULT FALSE,
+  jeopardy_total INTEGER,
+  double_jeopardy_total INTEGER,
+  final_jeopardy_total INTEGER,
+  final_jeopardy_wager INTEGER,
+  UNIQUE (game_id, contestant_id)
 );
 
-CREATE TABLE ClueRights ( /* Answered clue correctly */
-  ClueId TEXT NOT NULL REFERENCES Clues (id),
-  ContestantId TEXT NOT NULL REFERENCES Contestants (id)
+CREATE TABLE clue_rights ( /* Answered clue correctly */
+  clue_id TEXT NOT NULL REFERENCES clues (id),
+  contestant_id TEXT NOT NULL REFERENCES contestants (id),
+  UNIQUE (clue_id, contestant_id)
 );
 
-CREATE TABLE ClueWrongs ( /* Answered clue incorrectly */
-  ClueId TEXT NOT NULL REFERENCES Clues (id),
-  ContestantId TEXT NOT NULL REFERENCES Contestants (id)
+CREATE TABLE clue_wrongs ( /* Answered clue incorrectly */
+  clue_id TEXT NOT NULL REFERENCES clues (id),
+  contestant_id TEXT NOT NULL REFERENCES contestants (id),
+  UNIQUE (clue_id, contestant_id)
 );
 
 /* END CREATES */
 
 /* START CREATES */
 
-INSERT INTO Rounds (Name) VALUES
+INSERT INTO rounds (round_name) VALUES
  ('Jeopardy!')
 ,('Double Jeopardy!')
 ,('Final Jeopardy!');

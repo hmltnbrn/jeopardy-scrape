@@ -12,20 +12,29 @@ def by_season(conn, cur, links, findGender = False, findLocation = False):
             jeopardy_data = game_data.get(links[season][i], season)
             amtDone = float(i+1)/float(length)
             if(len(jeopardy_data) > 0):
-                build.games(cur, jeopardy_data)
-                build.contestants(cur, jeopardy_data["contestants"], jeopardy_data["id"], findGender, findLocation)
-                build.rounds(cur, jeopardy_data["rounds"], jeopardy_data["id"])
+                new = build.games(cur, jeopardy_data)
+                if not new:
+                    sys_text = " duplicate... skipping..."
+                else:
+                    build.contestants(cur, jeopardy_data["contestants"], jeopardy_data["id"], findGender, findLocation)
+                    build.rounds(cur, jeopardy_data["rounds"], jeopardy_data["id"])
+                    sys_text = " scrape and insert done..."
                 pg.commit(conn, cur)
-                sys.stdout.write("\rSeason " + str(season) + " Progress: [{0:50s}] {1:.1f}%".format('#' * int(amtDone * 50), amtDone * 100) + " Episode " + jeopardy_data["show_number"] + " scrape and insert done...")
+                sys.stdout.write("\rSeason " + str(season) + " Progress: [{0:50s}] {1:.1f}%".format('#' * int(amtDone * 50), amtDone * 100) + " Episode " + jeopardy_data["show_number"] + sys_text)
+                sys.stdout.flush()
         sys.stdout.write("\n")
 
 def by_episode(conn, cur, link, season, findGender = False, findLocation = False):
     jeopardy_data = game_data.get(link, season)
-    build.games(cur, jeopardy_data)
-    build.contestants(cur, jeopardy_data["contestants"], jeopardy_data["id"], findGender, findLocation)
-    build.rounds(cur, jeopardy_data["rounds"], jeopardy_data["id"])
+    new = build.games(cur, jeopardy_data)
+    if not new:
+        sys_text = " duplicate episode... skipping..."
+    else:
+        build.contestants(cur, jeopardy_data["contestants"], jeopardy_data["id"], findGender, findLocation)
+        build.rounds(cur, jeopardy_data["rounds"], jeopardy_data["id"])
+        sys_text = " scrape and insert done..."
     pg.commit(conn, cur)
-    sys.stdout.write("\rSeason " + str(season) + " Episode " + jeopardy_data["show_number"] + " scrape and insert done...")
+    sys.stdout.write("\rSeason " + str(season) + " Episode " + jeopardy_data["show_number"] + sys_text)
     sys.stdout.write("\n")
 
 if __name__ == "__main__":
