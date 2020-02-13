@@ -1,16 +1,16 @@
 import sys
 import json
-import geocoder
+from genderize import Genderize
 import pg
 
 def get_contestants(conn, cur):
-    return pg.select_all_where(cur, "contestants", "latitude IS NULL AND longitude IS NULL AND hometown IS NOT NULL")
+    return pg.select_all_where(cur, "contestants", "gender IS NULL")
 
-def do_geocode(key, location):
-    return geocoder.google(location=location, key=keys["gmaps_api_key"])
+def get_gender(name):
+    return Genderize().get([name])
 
-def update_coords(conn, cur, id, lat, lng):
-    pg.update_lat_lng(cur, [(id, lat, lng)])
+def update_gender(conn, cur, id, gender, probability):
+    pg.update_gender(cur, [(id, gender, probability)])
     pg.commit(conn, cur)
 
 if __name__ == "__main__":
@@ -19,7 +19,7 @@ if __name__ == "__main__":
 
     conn, cur = pg.connect()
 
-    print("Using Google Geocoding API")
+    print("Using Gender API")
 
     contestants = get_contestants(conn, cur)
 
@@ -27,8 +27,10 @@ if __name__ == "__main__":
 
     for i in range(length):
         amtDone = float(i+1)/float(length)
-        lat, lng = do_geocode(keys["gmaps_api_key"], contestants[i][4]).latlng
-        update_coords(conn, cur, contestants[i][0], str(lat), str(lng))
+        gender_data = get_gender(contestants[i][1])[0]
+        gender = gender_data["gender"]
+        probability = gender_data["probability"] if gender_data["gender"] is not None else None
+        update_gender(conn, cur, contestants[i][0], gender, probability)
         sys.stdout.write("\rContestant " + str(contestants[i][0]) + " -- " + contestants[i][1] + " " + contestants[i][2] + " -- Progress: [{0:50s}] {1:.1f}%".format('#' * int(amtDone * 50), amtDone * 100))
         sys.stdout.flush()
     sys.stdout.write("\n")

@@ -18,6 +18,12 @@ def update_lat_lng(cur, data):
         cur, query, data
     )
 
+def update_gender(cur, data):
+    query = "UPDATE contestants SET gender = data.gender, gender_probability = data.probability FROM (VALUES %s) AS data(id, gender, probability) WHERE contestants.id = data.id;"
+    psycopg2.extras.execute_values (
+        cur, query, data
+    )
+
 def connect():
     with open('../credentials/credentials.json') as cred_file:
         creds = json.load(cred_file)
@@ -31,4 +37,3 @@ def commit(conn, cur):
 def disconnect(conn, cur):
     cur.close()
     conn.close()
-
