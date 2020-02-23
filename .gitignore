@@ -50,3 +50,6 @@ Thumbs.db
 
 # Credentials/keys
 /credentials
+
+# Output Data
+/data

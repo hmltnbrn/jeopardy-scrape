@@ -3,7 +3,7 @@ import json
 from genderize import Genderize
 import pg
 
-def get_contestants(conn, cur):
+def get_contestants(cur):
     return pg.select_all_where(cur, "contestants", "gender IS NULL")
 
 def get_gender(name):
@@ -21,7 +21,7 @@ if __name__ == "__main__":
 
     print("Using Gender API")
 
-    contestants = get_contestants(conn, cur)
+    contestants = get_contestants(cur)
 
     length = len(contestants)
 

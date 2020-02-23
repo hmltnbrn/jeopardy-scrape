@@ -12,7 +12,7 @@ class Game(object):
 
     def __init__(self, link, season):
         self.link = link
-        self.html = BeautifulSoup(urlopen(link), "lxml") # requires the lxml Python module to be installed
+        self.html = self.get_html()
         self.season = str(season)
         self.show_number, self.air_date = self.html.find(id='game_title').find('h1').find(text=True).split(' - ')
         self.before_double = self.check_double()
@@ -23,6 +23,10 @@ class Game(object):
         self.contestants = self.set_contestants()
         self.rounds = self.set_rounds()
         self.set_winners()
+    
+    def get_html(self):
+        html = urlopen(self.link).read().decode('utf-8')
+        return BeautifulSoup(html, 'lxml') # requires the lxml Python module to be installed
 
     def check_double(self):
         if(datetime.datetime.strptime(self.air_date, '%A, %B %d, %Y').isoformat() < "2001-11-26T00:00:00"):

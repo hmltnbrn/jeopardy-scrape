@@ -3,7 +3,7 @@ import json
 import geocoder
 import pg
 
-def get_contestants(conn, cur):
+def get_contestants(cur):
     return pg.select_all_where(cur, "contestants", "latitude IS NULL AND longitude IS NULL AND hometown IS NOT NULL")
 
 def do_geocode(key, location):
@@ -21,7 +21,7 @@ if __name__ == "__main__":
 
     print("Using Google Geocoding API")
 
-    contestants = get_contestants(conn, cur)
+    contestants = get_contestants(cur)
 
     length = len(contestants)
 
