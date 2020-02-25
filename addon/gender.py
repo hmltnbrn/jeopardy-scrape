@@ -11,7 +11,7 @@ def get_gender(name):
 
 def update_gender(conn, cur, id, gender, probability):
     pg.update_gender(cur, [(id, gender, probability)])
-    pg.commit(conn, cur)
+    pg.commit(conn)
 
 if __name__ == "__main__":
     with open('../credentials/keys.json') as key_file:

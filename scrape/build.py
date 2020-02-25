@@ -41,7 +41,7 @@ def clues(cur, data, category_id):
     rights = []
     wrongs = []
     for i in data:
-        clues.append((i["id"], category_id, i["clue"], i["value"], i["answer"], i["daily_double"], i["daily_double_wager"], i["triple_stumper"]))
+        clues.append((i["id"], category_id, i["clue"], i["value"], i["answer"], i["daily_double"], i["daily_double_wager"], i["triple_stumper"], None))
         for j in range(len(i["rights"])):
             rights.append((i["id"], i["rights"][j]))
         for k in range(len(i["wrongs"])):

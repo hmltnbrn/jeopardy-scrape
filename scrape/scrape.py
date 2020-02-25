@@ -19,7 +19,7 @@ def by_season(conn, cur, links, findGender = False, findLocation = False):
                     build.contestants(cur, jeopardy_data["contestants"], jeopardy_data["id"], findGender, findLocation)
                     build.rounds(cur, jeopardy_data["rounds"], jeopardy_data["id"])
                     sys_text = " scrape and insert done..."
-                pg.commit(conn, cur)
+                pg.commit(conn)
                 sys.stdout.write("\rSeason " + str(season) + " Progress: [{0:50s}] {1:.1f}%".format('#' * int(amtDone * 50), amtDone * 100) + " Episode " + jeopardy_data["show_number"] + sys_text)
                 sys.stdout.flush()
         sys.stdout.write("\n")
@@ -33,7 +33,7 @@ def by_episode(conn, cur, link, season, findGender = False, findLocation = False
         build.contestants(cur, jeopardy_data["contestants"], jeopardy_data["id"], findGender, findLocation)
         build.rounds(cur, jeopardy_data["rounds"], jeopardy_data["id"])
         sys_text = " scrape and insert done..."
-    pg.commit(conn, cur)
+    pg.commit(conn)
     sys.stdout.write("\rSeason " + str(season) + " Episode " + jeopardy_data["show_number"] + sys_text)
     sys.stdout.write("\n")
 

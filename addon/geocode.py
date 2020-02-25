@@ -11,7 +11,7 @@ def do_geocode(key, location):
 
 def update_coords(conn, cur, id, lat, lng):
     pg.update_lat_lng(cur, [(id, lat, lng)])
-    pg.commit(conn, cur)
+    pg.commit(conn)
 
 if __name__ == "__main__":
     with open('../credentials/keys.json') as key_file:

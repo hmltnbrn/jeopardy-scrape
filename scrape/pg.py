@@ -27,7 +27,7 @@ def connect():
     cur = conn.cursor()
     return conn, cur
 
-def commit(conn, cur):
+def commit(conn):
     conn.commit()
 
 def disconnect(conn, cur):

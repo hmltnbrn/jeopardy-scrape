@@ -6,6 +6,7 @@ DROP TABLE IF EXISTS
 , game_contestants
 , contestants
 , clues
+, topics
 , categories
 , rounds
 , games;
@@ -38,6 +39,13 @@ CREATE TABLE categories (
   category_name TEXT
 );
 
+CREATE TABLE topics (
+  id TEXT PRIMARY KEY NOT NULL,
+  run_weight DECIMAL NOT NULL,
+  full_text TEXT NOT NULL,
+  short_text TEXT
+);
+
 CREATE TABLE clues (
   id TEXT PRIMARY KEY NOT NULL,
   category_id TEXT NOT NULL REFERENCES categories (id),
@@ -46,7 +54,9 @@ CREATE TABLE clues (
   answer TEXT NOT NULL,
   daily_double BOOLEAN NOT NULL DEFAULT FALSE,
   daily_double_wager INTEGER,
-  triple_stumper BOOLEAN NOT NULL DEFAULT FALSE
+  triple_stumper BOOLEAN NOT NULL DEFAULT FALSE,
+  topic_id TEXT REFERENCES topics (id),
+  topic_weight DECIMAL
 );
 
 CREATE TABLE contestants (
