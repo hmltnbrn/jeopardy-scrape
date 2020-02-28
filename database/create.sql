@@ -5,8 +5,9 @@ DROP TABLE IF EXISTS
 , clue_rights
 , game_contestants
 , contestants
+, profession_topics
 , clues
-, topics
+, clue_topics
 , categories
 , rounds
 , games;
@@ -39,7 +40,7 @@ CREATE TABLE categories (
   category_name TEXT
 );
 
-CREATE TABLE topics (
+CREATE TABLE clue_topics (
   id INTEGER PRIMARY KEY NOT NULL,
   run_weight DECIMAL NOT NULL,
   full_text TEXT NOT NULL,
@@ -55,9 +56,16 @@ CREATE TABLE clues (
   daily_double BOOLEAN NOT NULL DEFAULT FALSE,
   daily_double_wager INTEGER,
   triple_stumper BOOLEAN NOT NULL DEFAULT FALSE,
-  topic_id INTEGER REFERENCES topics (id),
+  topic_id INTEGER REFERENCES clue_topics (id),
   topic_weight DECIMAL,
   topics_all JSONB
+);
+
+CREATE TABLE profession_topics (
+  id INTEGER PRIMARY KEY NOT NULL,
+  run_weight DECIMAL NOT NULL,
+  full_text TEXT NOT NULL,
+  short_text TEXT
 );
 
 CREATE TABLE contestants (
@@ -69,7 +77,10 @@ CREATE TABLE contestants (
   gender TEXT, /* Retrieved through Genderize.io */
   gender_probability DECIMAL, /* Retrieved through Genderize.io */
   latitude TEXT, /* Retrieved through Google Maps Geocoding */
-  longitude TEXT /* Retrieved through Google Maps Geocoding */
+  longitude TEXT, /* Retrieved through Google Maps Geocoding */
+  profession_topic_id INTEGER REFERENCES profession_topics (id),
+  profession_topic_weight DECIMAL,
+  profession_topics_all JSONB
 );
 
 CREATE TABLE game_contestants (

@@ -5,11 +5,11 @@ import argparse
 def get_clues_by_season(cur, season):
     return pg.select_clues_by_season(cur, season)
 
-def create_text_files(curr, start_season = 1, end_season = 35):
+def create_text_files(cur, start_season = 1, end_season = 35):
     print('Starting with season {start_season} and ending with season {end_season}'.format(start_season = str(start_season), end_season = str(end_season)))
     for season in range(start_season, end_season + 1):
         current_season = str(season)
-        clues = get_clues_by_season(curr, current_season)
+        clues = get_clues_by_season(cur, current_season)
         length = len(clues)
         for i in range(len(clues)):
             amtDone = float(i+1)/float(length)

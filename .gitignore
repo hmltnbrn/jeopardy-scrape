@@ -51,6 +51,8 @@ Thumbs.db
 # Credentials/keys
 /credentials
 
-# Output Data
-/data
-/topics/mallet_files
+# Topic Modeling Data and Output
+/topics/mallet_files/data/clues/*
+/topics/mallet_files/data/professions/*
+/topics/mallet_files/output/clues/*
+/topics/mallet_files/output/professions/*

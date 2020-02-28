@@ -10,11 +10,11 @@ if __name__ == "__main__":
 
     print("Parsing composition file...")
 
-    with open('mallet_files/output/clues/jeopardy_composition.txt') as tsvfile:
+    with open('mallet_files/output/professions/jeopardy_composition.txt') as tsvfile:
         reader = csv.reader(tsvfile, delimiter='\t')
         for row in reader:
             topic_weight_list = [float(i) for i in row[2:]]
-            clue_id = os.path.splitext(os.path.basename(row[1]))[0].split('_')[-1]
+            profession_id = os.path.splitext(os.path.basename(row[1]))[0].split('_')[0]
             topic_weight = topic_weight_list[0]
             topic_id = 0
             for i in range(1, len(topic_weight_list)):
@@ -22,11 +22,11 @@ if __name__ == "__main__":
                     topic_weight = topic_weight_list[i]
                     topic_id = i
             topics_all = Json({i: topic_weight_list[i] for i in range(len(topic_weight_list))})
-            clues.append((clue_id, topic_id, topic_weight, topics_all))
+            clues.append((profession_id, topic_id, topic_weight, topics_all))
 
-    pg.update_clue_topics(cur, clues)
+    pg.update_contestant_topics(cur, clues)
     pg.commit(conn)
 
     pg.disconnect(conn, cur)
 
-    print("Clues and Topics Updated")
+    print("Contestants Updated")
