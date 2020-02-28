@@ -40,7 +40,7 @@ CREATE TABLE categories (
 );
 
 CREATE TABLE topics (
-  id TEXT PRIMARY KEY NOT NULL,
+  id INTEGER PRIMARY KEY NOT NULL,
   run_weight DECIMAL NOT NULL,
   full_text TEXT NOT NULL,
   short_text TEXT
@@ -55,8 +55,9 @@ CREATE TABLE clues (
   daily_double BOOLEAN NOT NULL DEFAULT FALSE,
   daily_double_wager INTEGER,
   triple_stumper BOOLEAN NOT NULL DEFAULT FALSE,
-  topic_id TEXT REFERENCES topics (id),
-  topic_weight DECIMAL
+  topic_id INTEGER REFERENCES topics (id),
+  topic_weight DECIMAL,
+  topics_all JSONB
 );
 
 CREATE TABLE contestants (

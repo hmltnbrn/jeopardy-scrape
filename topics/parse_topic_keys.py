@@ -8,12 +8,14 @@ if __name__ == "__main__":
 
     print("Parsing keys file...")
 
-    with open('mallet_files/jeopardy_keys.txt') as tsvfile:
+    with open('mallet_files/output/clues/jeopardy_keys.txt') as tsvfile:
         reader = csv.reader(tsvfile, delimiter='\t')
         for row in reader:
-            topics.append((row[0], float(row[1]), row[2].strip(), None))
+            topics.append((int(row[0]), float(row[1]), row[2].strip(), None))
 
     pg.insert_topic_keys(cur, topics)
     pg.commit(conn)
+
+    pg.disconnect(conn, cur)
 
     print("Topic Keys Inserted")

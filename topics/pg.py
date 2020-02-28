@@ -19,9 +19,9 @@ def insert_topic_keys(cur, data):
     )
 
 def update_clue_topics(cur, data):
-    query = "UPDATE clues SET topic_id = data.topic_id, topic_weight = data.topic_weight FROM (VALUES %s) AS data(clue_id, topic_id, topic_weight) WHERE clues.id = data.clue_id;"
+    query = "UPDATE clues SET topic_id = data.topic_id, topic_weight = data.topic_weight, topics_all = data.topics_all FROM (VALUES %s) AS data(clue_id, topic_id, topic_weight, topics_all) WHERE clues.id = data.clue_id;"
     psycopg2.extras.execute_values (
-        cur, query, data
+        cur, query, data, template="(%s, %s, %s, %s::jsonb)"
     )
 
 def connect():
