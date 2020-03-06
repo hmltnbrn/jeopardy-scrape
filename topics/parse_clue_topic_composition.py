@@ -10,7 +10,7 @@ if __name__ == "__main__":
 
     print("Parsing composition file...")
 
-    with open('mallet_files/output/clues/jeopardy_composition.txt') as tsvfile:
+    with open('mallet_files/output/clues/jeopardy_clues_composition.txt') as tsvfile:
         reader = csv.reader(tsvfile, delimiter='\t')
         for row in reader:
             topic_weight_list = [float(i) for i in row[2:]]
