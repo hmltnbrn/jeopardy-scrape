@@ -3,7 +3,7 @@ import psycopg2.extras
 import json
 
 def select_clues_by_season(cur, season):
-    query = "SELECT g.id AS game_id, g.air_date, c.id AS clue_id, c.clue_text, c.answer FROM clues c, categories ca, games g WHERE c.category_id = ca.id AND ca.game_id = g.id AND (c.clue_text != '-' OR c.answer != '-') AND g.season = '" + season + "'"
+    query = "SELECT g.id AS game_id, g.air_date, c.id AS clue_id, ca.category_name, c.clue_text, c.answer FROM clues c, categories ca, games g WHERE c.category_id = ca.id AND ca.game_id = g.id AND (c.clue_text != '-' OR c.answer != '-') AND g.season = '" + season + "'"
     cur.execute(query)
     return cur.fetchall()
 

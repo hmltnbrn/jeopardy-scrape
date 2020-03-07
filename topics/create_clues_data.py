@@ -14,7 +14,7 @@ def create_text_files(cur, start_season = 1, end_season = 35):
         for i in range(len(clues)):
             amtDone = float(i+1)/float(length)
             with open('mallet_files/data/clues/{game_id}_{air_date}_{clue_id}.txt'.format(game_id=clues[i][0], air_date=clues[i][1].split('T')[0], clue_id=clues[i][2]), 'w+', encoding='utf-8') as text_file:
-                text_file.write("{clue_text} {answer}".format(clue_text=clues[i][3], answer=clues[i][4]))
+                text_file.write("{category_name} {clue_text} {answer}".format(category_name=clues[i][3], clue_text=clues[i][4], answer=clues[i][5]))
             sys.stdout.write("\r Season " + current_season + " Clue " + str(clues[i][2]) + " -- Progress: [{0:50s}] {1:.1f}%".format('#' * int(amtDone * 50), amtDone * 100))
             sys.stdout.flush()
         sys.stdout.write("\n")
