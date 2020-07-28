@@ -43,8 +43,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Scrape J! Archive")
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("-e", "--episode", nargs=2, metavar=('url', 'season'), help="Only scrape one episode")
-    group.add_argument("-s", "--season", nargs=2, metavar=('start_season', 'end_season'), type=int, help="Scrape specific seasons")
-    group.add_argument("-ss", "--season-start", nargs=1, metavar=('start_season'), type=int, help="Scrape from start season and end at end of show")
+    group.add_argument("-s", "--season", nargs=2, metavar=('start_season', 'end_season'), type=int, choices=range(1, 37), help="Scrape specific seasons")
+    group.add_argument("-ss", "--season-start", nargs=1, metavar=('start_season'), type=int, choices=range(1, 37), help="Scrape from start season and end at end of show")
     group.add_argument("-a", "--all", action='store_true', help="Scrape all seasons")
     parser.add_argument("-g", "--gender", action='store_true', help="Use Genderize.io to determine gender/sex")
     parser.add_argument("-l", "--location", action='store_true', help="Use Google geocoding API to determine lat/lng for contestant")
@@ -65,11 +65,14 @@ if __name__ == "__main__":
         if args.all:
             links = game_links.get()
         elif args.season:
-            links = game_links.get(args.season[0], args.season[1])
+            if args.season[0] > args.season[1]:
+                parser.error("First season must be less than last season")
+            else:
+                links = game_links.get(args.season[0], args.season[1])
         elif args.season_start:
             links = game_links.get(args.season_start[0])
         else:
-            print("There's been an error. Oops.")
+            parser.error("There's been an error. Oops.")
 
         by_season(conn, cur, links, args.gender, args.location)
 
