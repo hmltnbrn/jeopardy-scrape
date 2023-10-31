@@ -176,13 +176,13 @@ class Category(object):
         for i in range(len(self.html)):
             value = self.html[i].find(class_="clue_value") if self.html[i].find(class_="clue_value_daily_double") is None else self.html[i].find(class_="clue_value_daily_double")
             question = self.html[i].find(class_="clue_text")
-            answer = self.answer_div.findAll("div")[index] if self.answer_div is not None else self.html[i].find("div")
+            answer = self.answer_div.findAll("div")[index] if self.answer_div is not None else self.html[i].find(class_="correct_response")
             if(value and question and answer):
                 if(question.get_text() != "="):
-                    clues.append(Clue(value.find(text=True), question.get_text(), BeautifulSoup(answer["onmouseover"], "lxml").find(class_="correct_response").get_text(), answer["onmouseover"], i, self.round, self.before_double, self.all_star_game))
+                    clues.append(Clue(value.find(text=True), question.get_text(), answer.get_text(), None, i, self.round, self.before_double, self.all_star_game))
             elif(question and answer):
                 if(question.get_text() != "="):
-                    clues.append(Clue("", question.get_text(), BeautifulSoup(answer["onmouseover"], "lxml").find(class_=re.compile("correct")).get_text(), answer["onmouseover"], i, self.round, self.before_double, self.all_star_game))
+                    clues.append(Clue("", question.get_text(), answer.get_text(), None, i, self.round, self.before_double, self.all_star_game))
         return clues
 
     def get_data(self):
@@ -203,8 +203,10 @@ class Clue(object):
         self.daily_double_wager = None
         self.triple_stumper = False
         self.all_star_game = all_star_game
-        self.rights = self.set_rights(mouseover_text)
-        self.wrongs = self.set_wrongs(mouseover_text)
+        # self.rights = self.set_rights(mouseover_text)
+        # self.wrongs = self.set_wrongs(mouseover_text)
+        self.rights = []
+        self.wrongs = []
         self.slot = slot
         self.round = round
         self.before_double = before_double
