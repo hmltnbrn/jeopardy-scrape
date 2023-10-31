@@ -176,7 +176,7 @@ class Category(object):
         for i in range(len(self.html)):
             value = self.html[i].find(class_="clue_value") if self.html[i].find(class_="clue_value_daily_double") is None else self.html[i].find(class_="clue_value_daily_double")
             question = self.html[i].find(class_="clue_text")
-            answer = self.answer_div.findAll("div")[index] if self.answer_div is not None else self.html[i].find(class_="correct_response")
+            answer = self.html[i].find(class_="correct_response")
             if(value and question and answer):
                 if(question.get_text() != "="):
                     clues.append(Clue(value.find(text=True), question.get_text(), answer.get_text(), None, i, self.round, self.before_double, self.all_star_game))
